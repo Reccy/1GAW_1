@@ -37,7 +37,10 @@ public class PlayerController : MonoBehaviour
             m_inputMovement = Vector2.zero;
         }
 
-        Debug.DrawLine(transform.position, mousePos, Color.green);
+        m_inputMovement.x = Mathf.Clamp(m_inputMovement.x, -20, 20);
+        m_inputMovement.y = Mathf.Clamp(m_inputMovement.y, -20, 20);
+
+        Debug.DrawLine(transform.position, mousePos, Color.yellow);
     }
 
     void FixedUpdate()
@@ -62,14 +65,26 @@ public class PlayerController : MonoBehaviour
 
     List<Tile> DetectCollisions()
     {
-        return m_level.FindCollidingTiles(this, transform.position, transform.position + (Vector3)m_velocity);
+        Debug.DrawLine(transform.position, transform.position + (Vector3)m_velocity * 10, Color.red);
+        return new List<Tile>(m_level.FindCollidingTiles(this, transform.position, transform.position + (Vector3)m_velocity));
     }
 
     void ResolveCollisions(List<Tile> tiles)
     {
-        Debug.Log($"Resolving collisions against {tiles.Count} tiles");
-        m_velocity = Vector2.zero;
-        return;
+        foreach (Tile tile in tiles)
+        {
+            ResolveCollision(tile);
+        }
+    }
+
+    void ResolveCollision(Tile tile)
+    {
+        Vector2 normal = GetNormalAgainstTile(tile);
+    }
+
+    Vector2 GetNormalAgainstTile(Tile tile)
+    {
+        return Vector2.zero;
     }
 
     Vector2 GetMouseWorldPos()
@@ -80,7 +95,7 @@ public class PlayerController : MonoBehaviour
 
     public bool RaycastCheckCollision(Vector3 direction, Collider2D other)
     {
-        RaycastHit2D[] results = new RaycastHit2D[8];
+        RaycastHit2D[] results = new RaycastHit2D[16];
 
         int hitCount = m_collider.Cast(direction.normalized, results, direction.magnitude, true);
 
