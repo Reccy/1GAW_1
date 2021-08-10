@@ -3,15 +3,33 @@ using UnityEngine;
 [SelectionBase]
 public class Tile : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
+    [SerializeField]
+    private Collider2D m_collider;
+
+    [SerializeField]
+    private SpriteRenderer m_renderer;
+
+    private LevelManager m_levelManager;
+
+    public void Subscribe(LevelManager levelManager)
     {
-        
+        m_levelManager = levelManager;
     }
 
-    // Update is called once per frame
     void Update()
     {
-        //Physics2D.RaycastAll()
+        if (m_levelManager.PlayerIsCollidingWithTile(this))
+        {
+            m_renderer.color = Color.green;
+        }
+        else
+        {
+            m_renderer.color = Color.black;
+        }
+    }
+
+    public Collider2D Collider()
+    {
+        return m_collider;
     }
 }
