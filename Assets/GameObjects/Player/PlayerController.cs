@@ -1,12 +1,16 @@
 using UnityEngine;
 
+[SelectionBase]
 public class PlayerController : MonoBehaviour
 {
-    public float gravity = 5.0f;
-
-    public float terminalVelocity = 20.0f;
-
-    Vector2 movement = Vector2.zero;
+    [SerializeField]
+    private Camera m_mainCamera;
+    
+    [SerializeField]
+    private float m_speed = 1.0f;
+    
+    private Vector2 m_velocity;
+    private Vector2 m_inputMovement;
 
     void Start()
     {
@@ -15,40 +19,36 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        // read inputs
+        Vector2 mousePos = GetMouseWorldPos();
+
+        if (Input.GetMouseButton(0))
+        {
+            m_inputMovement = ((Vector3)mousePos - transform.position) * m_speed;
+        }
+        else
+        {
+            m_inputMovement = Vector2.zero;
+        }
+
+        Debug.DrawLine(transform.position, mousePos, Color.green);
     }
 
     void FixedUpdate()
     {
-        Move();
+        // Update velocity with input
+        m_velocity += m_inputMovement * Time.fixedDeltaTime;
+
+        // Clamp speed
+        m_velocity.x = Mathf.Clamp(m_velocity.x, -10, 10);
+        m_velocity.y = Mathf.Clamp(m_velocity.y, -10, 10);
+
+        // Move to new position with velocity
+        transform.position = transform.position + (Vector3)m_velocity;
     }
 
-    void Move()
+    Vector2 GetMouseWorldPos()
     {
-        if (!IsGrounded())
-        {
-            ApplyFall();
-        }
-
-        if (movement.magnitude > terminalVelocity)
-        {
-            movement = movement.normalized * terminalVelocity;
-        }
-
-        Debug.Log($"v{movement.magnitude}, mv{terminalVelocity}");
-
-        // GC here but fine for prototype
-        transform.position += new Vector3(movement.x, movement.y, 0);
-    }
-
-    bool IsGrounded()
-    {
-        // todo
-        return false;
-    }
-
-    void ApplyFall()
-    {
-        movement += Vector2.down * gravity * Time.fixedDeltaTime;
+        Vector3 mouse = Input.mousePosition;
+        return m_mainCamera.ScreenToWorldPoint(mouse);
     }
 }
