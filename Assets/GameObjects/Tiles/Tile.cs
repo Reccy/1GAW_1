@@ -32,4 +32,14 @@ public class Tile : MonoBehaviour
     {
         return m_collider;
     }
+
+    public float Width()
+    {
+        return m_collider.bounds.size.x;
+    }
+
+    public float Height()
+    {
+        return m_collider.bounds.size.y;
+    }
 }
