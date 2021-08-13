@@ -33,6 +33,17 @@ public class Tile : MonoBehaviour
         return m_collider;
     }
 
+    public Bounds OuterBounds(PlayerController pc)
+    {
+        return new Bounds(transform.position, new Vector3(Width() + pc.Width(), Height() + pc.Height()));
+    }
+
+    public Vector2 NormalToBounds(PlayerController pc)
+    {
+        Bounds b = OuterBounds(pc);
+        return new Vector2(b.size.x / 2, b.size.y / 2);
+    }
+
     public float Width()
     {
         return m_collider.bounds.size.x;

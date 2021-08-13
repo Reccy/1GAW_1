@@ -48,7 +48,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_mainCamera: {fileID: 0}
   m_level: {fileID: 0}
-  m_speed: 0.2
+  m_speed: 0.1
   m_collider: {fileID: 6341911706408105775}
 --- !u!50 &2176959852160209547
 Rigidbody2D:

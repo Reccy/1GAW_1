@@ -6,11 +6,12 @@ public class LevelManager : MonoBehaviour
     private List<Tile> m_tilesList;
     private List<TileCollision> m_playerCollisionList;
 
+    bool m_pause = false;
+
     public struct TileCollision
     {
         public Tile tile;
         public float length;
-        public Vector2 normal;
     }
 
     private void Awake()
@@ -27,6 +28,20 @@ public class LevelManager : MonoBehaviour
         Debug.Log($"Tile in level: {m_tilesList.Count}");
     }
 
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            Debug.Log("Pause toggle");
+            m_pause = !m_pause;
+        }
+    }
+
+    private void LateUpdate()
+    {
+        
+    }
+
     static Color[] cMap = {
         Color.white * 1,
         Color.red * 0.9f,
@@ -40,17 +55,19 @@ public class LevelManager : MonoBehaviour
         Color.blue * 0.1f,
     };
 
-    public IList<TileCollision> FindCollidingTiles(PlayerController pc, Vector3 currentPos, Vector3 nextPos)
+    public IList<Tile> FindCollidingTiles(PlayerController pc, Vector3 currentPos, Vector3 nextPos)
     {
         m_playerCollisionList.Clear();
 
-        Vector3 toNextPos = nextPos - currentPos;
+        Vector3 velocity = nextPos - currentPos;
 
         foreach (Tile tile in m_tilesList)
         {
-            if (pc.CastCheckVsOtherCollider(toNextPos, tile.Collider()))
+            Vector2 hit = Vector2.zero;
+
+            if (pc.CastCheckVsOtherCollider(velocity, tile.Collider()))
             {
-                Vector3 proj = FindNearestPointOnLine(currentPos, toNextPos.normalized, tile.transform.position);
+                Vector3 proj = FindNearestPointOnLine(currentPos, velocity.normalized, tile.transform.position);
                 float length = (tile.transform.position - proj).sqrMagnitude;
 
                 // Length to projection is less than 0, object is actually behind us
@@ -60,7 +77,6 @@ public class LevelManager : MonoBehaviour
                 TileCollision tileCollision = new TileCollision();
                 tileCollision.tile = tile;
                 tileCollision.length = length;
-                tileCollision.normal = CalculateNormal(tile, nextPos);
 
                 m_playerCollisionList.Add(tileCollision);
             }
@@ -80,53 +96,23 @@ public class LevelManager : MonoBehaviour
         foreach (TileCollision tileCol in m_playerCollisionList)
         {
             Tile tile = tileCol.tile;
-            Vector3 proj = FindNearestPointOnLine(currentPos, toNextPos.normalized, tile.transform.position);
+            Vector3 proj = FindNearestPointOnLine(currentPos, velocity.normalized, tile.transform.position);
 
             Debug.DrawLine(tile.transform.position, proj, cMap[tilesColored]);
             tilesColored++;
         }
 
-        return m_playerCollisionList;
-    }
+        List<Tile> result = new List<Tile>();
 
-    private Vector2 CalculateNormal(Tile tile, Vector2 pos)
-    {
-        Vector3 posToTileDir = (tile.transform.position - (Vector3)pos).normalized;
-
-        Ray ray = new Ray(pos, posToTileDir);
-
-        RaycastHit2D hit = RaycastForTile(ray, tile);
-        
-        DebugDrawCross(hit.point, Color.yellow);
-        DebugDrawNormal(tile);
-
-        return hit.normal;
-    }
-
-    private RaycastHit2D RaycastForTile(Ray ray, Tile tile)
-    {
-        RaycastHit2D[] hits = Physics2D.RaycastAll(ray.origin, ray.direction);
-
-        DebugDrawArrow(ray.origin, ray.origin + ray.direction * 2, Color.cyan);
-
-        for (int i = 0; i < hits.Length; ++i)
+        foreach (TileCollision col in m_playerCollisionList)
         {
-            RaycastHit2D hit = hits[i];
-
-            if (hit.collider == tile.Collider())
-            {
-                return hit;
-            }
+            result.Add(col.tile);
         }
 
-        Debug.LogError("BREAK: hitt has no value");
-        Debug.Break();
-
-        // This is invalid!
-        return new RaycastHit2D();
+        return result;
     }
 
-    private void DebugDrawCross(Vector2 pos, Color col)
+    public void DebugDrawCross(Vector2 pos, Color col)
     {
         const float scale = 0.25f;
 
@@ -139,15 +125,7 @@ public class LevelManager : MonoBehaviour
         Debug.DrawLine(topRight, botLeft, col);
     }
 
-    private void DebugDrawNormal(Tile tile)
-    {
-        Vector2 arrowOrigin = tile.transform.position;
-        Vector2 arrowPoint = tile.transform.position + (Vector3)normal * 2;
-
-        DebugDrawArrow(arrowOrigin, arrowPoint, Color.magenta);
-    }
-
-    private void DebugDrawArrow(Vector2 arrowOrigin, Vector2 arrowPoint, Color col)
+    public void DebugDrawArrow(Vector2 arrowOrigin, Vector2 arrowPoint, Color col)
     {
         Vector2 beginToEnd = (arrowPoint - arrowOrigin).normalized;
 
