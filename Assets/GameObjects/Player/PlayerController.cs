@@ -14,76 +14,71 @@ public class PlayerController : MonoBehaviour
     private float m_speed = 1.0f;
 
     [SerializeField]
+    private float m_jumpImpulse = 15.0f;
+
+    [SerializeField]
     private Collider2D m_collider;
 
-    public GameObject initVelObj;
+    [SerializeField]
+    private float m_gravity = 1.0f;
+
+    [SerializeField]
+    private float m_maxSpeed = 2.0f;
+
+    [SerializeField]
+    private float m_horizontalDampening = 0.8f;
 
     private Vector2 m_velocity;
     private Vector2 m_inputMovement;
-
-    void Start()
-    {
-        m_velocity = initVelObj.transform.position - transform.position;
-    }
+    private bool m_jumpInput;
 
     void Update()
     {
-        Vector2 mousePos = GetMouseWorldPos();
-
-        if (Input.GetMouseButton(0))
+        if (Input.GetKey(KeyCode.A))
         {
-            m_inputMovement = ((Vector3)mousePos - transform.position) * m_speed;
+            m_inputMovement.x = -m_speed;
+        }
+        else if (Input.GetKey(KeyCode.D))
+        {
+            m_inputMovement.x = m_speed;
         }
         else
         {
-            m_inputMovement = -m_velocity;
-
-            if (m_inputMovement.magnitude < 0.01f && m_velocity.magnitude < 0.01f)
-            {
-                m_inputMovement = Vector2.zero;
-            }
-        }
-
-        if (Input.GetMouseButtonDown(1))
-        {
-            transform.position = mousePos;
-        }
-
-        if (Input.GetKey(KeyCode.A))
-        {
-            m_inputMovement += Vector2.left;
-        }
-
-        if (Input.GetKey(KeyCode.D))
-        {
-            m_inputMovement += Vector2.right * 2;
+            m_inputMovement.x = 0;
         }
 
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            Debug.Log("Jump");
-            m_inputMovement += Vector2.up * 15;
+            m_jumpInput = true;
         }
 
-        m_inputMovement.x = Mathf.Clamp(m_inputMovement.x, -20, 20);
-        m_inputMovement.y = Mathf.Clamp(m_inputMovement.y, -20, 20);
+        m_inputMovement = Vector2.ClampMagnitude(m_inputMovement, m_maxSpeed);
     }
 
     void FixedUpdate()
     {
+        // Apply dampening
+        if (m_inputMovement.x == 0)
+            m_velocity.x *= m_horizontalDampening;
+        
         // Update velocity with input
-        m_velocity += m_inputMovement * Time.fixedDeltaTime;
+        m_velocity.x += m_inputMovement.x * Time.fixedDeltaTime;
 
         // Update velocity with gravity
-        m_velocity += Vector2.down * 0.5f * Time.fixedDeltaTime;
+        m_velocity += Vector2.down * m_gravity * Time.fixedDeltaTime;
+
+        if (m_jumpInput)
+        {
+            m_velocity.y = m_jumpImpulse * Time.fixedDeltaTime;
+            m_jumpInput = false;
+        }
 
         // Clamp speed
-        m_velocity.x = Mathf.Clamp(m_velocity.x, -10, 10);
-        m_velocity.y = Mathf.Clamp(m_velocity.y, -10, 10);
+        m_velocity = Vector2.ClampMagnitude(m_velocity, m_maxSpeed);
 
         List<Tile> collidingTiles = new List<Tile>();
 
-        int remainingResolutions = 1;
+        int remainingResolutions = 3;
         do
         {
             collidingTiles = DetectCollisions();
@@ -96,7 +91,7 @@ public class PlayerController : MonoBehaviour
 
         if (remainingResolutions == 0 && collidingTiles.Count > 0)
         {
-            //Debug.Log($"Could not resolve all collisions on this frame! Remaining: {collidingTiles.Count}");
+            Debug.Log($"Could not resolve all collisions on this frame! Remaining: {collidingTiles.Count}");
         }
 
         //m_level.DebugDrawArrow(transform.position, transform.position + (Vector3)m_velocity, Color.cyan);
@@ -108,7 +103,7 @@ public class PlayerController : MonoBehaviour
     {
         Debug.DrawLine(transform.position, GetMouseWorldPos(), Color.yellow);
         Debug.DrawLine(transform.position, transform.position + (Vector3)m_velocity, Color.white);
-        //FindObjectOfType<LevelManager>().DebugDrawCross(transform.position, Color.blue);
+        DebugDraw.DrawCross(transform.position, Color.blue);
     }
 
     List<Tile> DetectCollisions()
@@ -118,8 +113,6 @@ public class PlayerController : MonoBehaviour
 
     void ResolveCollisions(List<Tile> tiles)
     {
-        //m_velocity = Vector2.zero;
-
         for (int i = 0; i < tiles.Count; ++i)
         {
             var col = tiles[i];
@@ -141,49 +134,18 @@ public class PlayerController : MonoBehaviour
 
         Vector2 normal = CalculateNormal(tile, hit.point);
 
-        m_level.DebugDrawCross(hit.point, Color.black);
+        DebugDraw.DrawCross(hit.point, Color.black);
 
         Bounds bounds = tile.OuterBounds(this);
         float penetration = Mathf.Sqrt(bounds.SqrDistance(hit.point));
-        DebugDrawBounds(bounds);
+        DebugDraw.DrawBounds(bounds);
 
         Vector2 closestPoint = bounds.ClosestPoint(hit.point);
-        m_level.DebugDrawCross(closestPoint, Color.red);
-        /*
-        if (normal == Vector2.left || normal == Vector2.right)
-        {
-            m_velocity += normal * new Vector2(m_velocity.x, 0);
-        }
-        else
-        {
-            m_velocity += normal * new Vector2(0, m_velocity.y);
-        }
-        */
-        /*
-        float closestDistance = Mathf.Sqrt(bounds.SqrDistance(nextPos));
-
-        Debug.Log($"{tile.name}: {closestDistance} -> {1 - closestDistance}");
-
-        if (closestDistance < 0)
-        {
-            Debug.Log($"Closest Distance is too small -> {closestDistance}");
-            Debug.DebugBreak();
-            return;
-        }
-        */
+        DebugDraw.DrawCross(closestPoint, Color.red);
 
         Vector2 deltaV = normal * new Vector2(Mathf.Abs(m_velocity.x), Mathf.Abs(m_velocity.y)) * (1 - penetration);
 
-        //Vector2 deltaV = tile.transform.position + Vector3.Scale(normal, tile.NormalToBounds(this)) - Vector3.Scale(normal, transform.position);
-
         m_velocity += deltaV;
-        /*
-        Debug.Log($"normal: {normal}");
-        Debug.Log($"dV: {deltaV}");
-
-        m_velocity += deltaV;
-        Debug.Log($"fV: {m_velocity}");
-        */
     }
 
     private Vector2 CalculateNormal(Tile tile, Vector2 pos)
@@ -194,7 +156,7 @@ public class PlayerController : MonoBehaviour
 
         RaycastHit2D hit = RaycastForTile(ray, tile);
 
-        m_level.DebugDrawCross(hit.point, Color.yellow);
+        DebugDraw.DrawCross(hit.point, Color.yellow);
         DebugDrawNormal(tile, hit.normal);
 
         return hit.normal;
@@ -206,7 +168,7 @@ public class PlayerController : MonoBehaviour
         Vector2 arrowOrigin = tile.transform.position;
         Vector2 arrowPoint = tile.transform.position + (Vector3)normal * 2;
 
-        m_level.DebugDrawArrow(arrowOrigin, arrowPoint, Color.magenta);
+        DebugDraw.DrawArrow(arrowOrigin, arrowPoint, Color.magenta);
     }
 
 
@@ -214,7 +176,7 @@ public class PlayerController : MonoBehaviour
     {
         RaycastHit2D[] hits = Physics2D.RaycastAll(ray.origin, ray.direction);
 
-        m_level.DebugDrawArrow(ray.origin, ray.origin + ray.direction * 2, Color.cyan);
+        DebugDraw.DrawArrow(ray.origin, ray.origin + ray.direction * 2, Color.cyan);
 
         for (int i = 0; i < hits.Length; ++i)
         {
@@ -231,14 +193,6 @@ public class PlayerController : MonoBehaviour
 
         // This is invalid!
         return new RaycastHit2D();
-    }
-
-    void DebugDrawBounds(Bounds bounds)
-    {
-        Debug.DrawLine(new Vector3(bounds.min.x, bounds.min.y), new Vector3(bounds.min.x, bounds.max.y), Color.blue);
-        Debug.DrawLine(new Vector3(bounds.min.x, bounds.max.y), new Vector3(bounds.max.x, bounds.max.y), Color.blue);
-        Debug.DrawLine(new Vector3(bounds.max.x, bounds.max.y), new Vector3(bounds.max.x, bounds.min.y), Color.blue);
-        Debug.DrawLine(new Vector3(bounds.max.x, bounds.min.y), new Vector3(bounds.min.x, bounds.min.y), Color.blue);
     }
 
     public float Width()

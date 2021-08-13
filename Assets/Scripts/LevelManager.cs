@@ -37,24 +37,6 @@ public class LevelManager : MonoBehaviour
         }
     }
 
-    private void LateUpdate()
-    {
-        
-    }
-
-    static Color[] cMap = {
-        Color.white * 1,
-        Color.red * 0.9f,
-        Color.green * 0.8f,
-        Color.blue * 0.7f,
-        Color.cyan * 0.6f,
-        Color.magenta * 0.5f,
-        Color.yellow * 0.4f,
-        Color.red * 0.3f,
-        Color.green * 0.2f,
-        Color.blue * 0.1f,
-    };
-
     public IList<Tile> FindCollidingTiles(PlayerController pc, Vector3 currentPos, Vector3 nextPos)
     {
         m_playerCollisionList.Clear();
@@ -92,16 +74,6 @@ public class LevelManager : MonoBehaviour
             return 0;
         }));
 
-        int tilesColored = 0;
-        foreach (TileCollision tileCol in m_playerCollisionList)
-        {
-            Tile tile = tileCol.tile;
-            Vector3 proj = FindNearestPointOnLine(currentPos, velocity.normalized, tile.transform.position);
-
-            Debug.DrawLine(tile.transform.position, proj, cMap[tilesColored]);
-            tilesColored++;
-        }
-
         List<Tile> result = new List<Tile>();
 
         foreach (TileCollision col in m_playerCollisionList)
@@ -110,30 +82,6 @@ public class LevelManager : MonoBehaviour
         }
 
         return result;
-    }
-
-    public void DebugDrawCross(Vector2 pos, Color col)
-    {
-        const float scale = 0.25f;
-
-        Vector3 topLeft = pos + (Vector2.left * scale) + (Vector2.up * scale);
-        Vector3 topRight = pos + (Vector2.right * scale) + (Vector2.up * scale);
-        Vector3 botLeft = pos + (Vector2.left * scale) + (Vector2.down * scale);
-        Vector3 botRight = pos + (Vector2.right * scale) + (Vector2.down * scale);
-
-        Debug.DrawLine(topLeft, botRight, col);
-        Debug.DrawLine(topRight, botLeft, col);
-    }
-
-    public void DebugDrawArrow(Vector2 arrowOrigin, Vector2 arrowPoint, Color col)
-    {
-        Vector2 beginToEnd = (arrowPoint - arrowOrigin).normalized;
-
-        Vector2 perp = Vector2.Perpendicular(beginToEnd);
-        
-        Debug.DrawLine(arrowOrigin, arrowPoint, col);
-        Debug.DrawLine(arrowPoint, arrowPoint - (beginToEnd * 0.2f) + (perp * 0.2f), col);
-        Debug.DrawLine(arrowPoint, arrowPoint - (beginToEnd * 0.2f) - (perp * 0.2f), col);
     }
 
     public bool PlayerIsCollidingWithTile(Tile tile)
