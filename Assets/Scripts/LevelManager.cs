@@ -71,17 +71,51 @@ public class LevelManager : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.P))
         {
-            if (m_aSelected)
-            {
-                m_currentTileList = m_tilesListB;
-            }
-            else
-            {
-                m_currentTileList = m_tilesListA;
-            }
-
-            m_aSelected = !m_aSelected;
+            Flip();
         }
+    }
+
+    public RaycastHit2D[] FilterCollisions(RaycastHit2D[] hitsIn)
+    {
+        List<RaycastHit2D> results = new List<RaycastHit2D>();
+
+        foreach (RaycastHit2D hit in hitsIn)
+        {
+            if (hit.collider == null)
+                continue;
+
+            Tile tile = hit.collider.GetComponentInParent<Tile>();
+            if (tile)
+            {
+                if (m_aSelected && m_tilesListA.Contains(tile))
+                {
+                    results.Add(hit);
+                    continue;
+                }
+
+                if (!m_aSelected && m_tilesListB.Contains(tile))
+                {
+                    results.Add(hit);
+                    continue;
+                }
+            }
+        }
+
+        return results.ToArray();
+    }
+
+    public void Flip()
+    {
+        if (m_aSelected)
+        {
+            m_currentTileList = m_tilesListB;
+        }
+        else
+        {
+            m_currentTileList = m_tilesListA;
+        }
+
+        m_aSelected = !m_aSelected;
     }
 
     public IList<Tile> FindCollidingTiles(PlayerController pc, Vector3 currentPos, Vector3 nextPos)

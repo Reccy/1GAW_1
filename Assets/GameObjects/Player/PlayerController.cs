@@ -20,6 +20,12 @@ public class PlayerController : MonoBehaviour
     private Collider2D m_collider;
 
     [SerializeField]
+    private Collider2D m_groundedCollider;
+
+    [SerializeField]
+    private Collider2D m_groundedInputCollider;
+
+    [SerializeField]
     private float m_gravity = 1.0f;
 
     [SerializeField]
@@ -34,6 +40,8 @@ public class PlayerController : MonoBehaviour
     private Vector2 m_velocity;
     private Vector2 m_inputMovement;
     private bool m_jumpInput;
+    private bool m_isGrounded;
+    private bool m_isGroundedInputCheck;
 
     void Update()
     {
@@ -52,7 +60,9 @@ public class PlayerController : MonoBehaviour
             m_inputMovement.x = 0;
         }
 
-        if (Input.GetKeyDown(KeyCode.Space))
+        m_isGroundedInputCheck = ColliderCheck(m_groundedInputCollider);
+
+        if (m_isGroundedInputCheck && Input.GetKeyDown(KeyCode.Space))
         {
             m_jumpInput = true;
         }
@@ -74,9 +84,12 @@ public class PlayerController : MonoBehaviour
         // Update velocity with gravity
         m_velocity += Vector2.down * m_gravity * Time.fixedDeltaTime;
 
-        if (m_jumpInput)
+        m_isGrounded = ColliderCheck(m_groundedCollider);
+
+        if (m_isGrounded && m_jumpInput)
         {
             m_velocity.y = m_jumpImpulse * Time.fixedDeltaTime;
+            m_level.Flip();
             m_jumpInput = false;
         }
 
@@ -84,27 +97,22 @@ public class PlayerController : MonoBehaviour
         m_velocity.x = Mathf.Clamp(m_velocity.x, -m_maxHorizontalSpeed, m_maxHorizontalSpeed);
         m_velocity.y = Mathf.Clamp(m_velocity.y, -m_maxVerticalSpeed, m_maxVerticalSpeed);
 
-        List<Tile> collidingTiles = new List<Tile>();
-
-        int remainingResolutions = 1;
-        do
-        {
-            collidingTiles = DetectCollisions();
-
-            if (collidingTiles.Count > 0)
-                ResolveCollisions(collidingTiles);
-
-            remainingResolutions--;
-        } while (remainingResolutions > 0 && collidingTiles.Count > 0);
-
-        if (remainingResolutions == 0 && collidingTiles.Count > 0)
-        {
-            Debug.Log($"Could not resolve all collisions on this frame! Remaining: {collidingTiles.Count}");
-        }
+        List<Tile> collidingTiles = DetectCollisions();
+        ResolveCollisions(collidingTiles);
 
         //m_level.DebugDrawArrow(transform.position, transform.position + (Vector3)m_velocity, Color.cyan);
 
         transform.position = transform.position + (Vector3)m_velocity;
+    }
+
+    bool ColliderCheck(Collider2D collider)
+    {
+        RaycastHit2D[] original = new RaycastHit2D[16];
+        collider.Cast(Vector2.zero, original);
+
+        RaycastHit2D[] hits = m_level.FilterCollisions(original);
+
+        return hits.Length > 0;
     }
 
     List<Tile> DetectCollisions()
@@ -170,7 +178,6 @@ public class PlayerController : MonoBehaviour
 
         DebugDraw.DrawArrow(arrowOrigin, arrowPoint, Color.magenta);
     }
-
 
     private RaycastHit2D RaycastForTile(Ray ray, Tile tile)
     {
@@ -269,8 +276,9 @@ public class PlayerController : MonoBehaviour
 
     private void OnGUI()
     {
-        GUI.Box(new Rect(10, 10, 150, 40), "Player");
+        GUI.Box(new Rect(10, 10, 150, 80), "Player");
 
         GUI.Label(new Rect(20, 30, 140, 20), $"Vel: {m_velocity}");
+        GUI.Label(new Rect(20, 60, 140, 20), $"Ground: {m_isGrounded}");
     }
 }
