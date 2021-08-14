@@ -3,8 +3,16 @@ using UnityEngine;
 
 public class LevelManager : MonoBehaviour
 {
+    public enum Set
+    {
+        A,
+        B,
+        STATIC
+    }
+
     private List<Tile> m_tilesListA;
     private List<Tile> m_tilesListB;
+    private List<Tile> m_staticTilesList;
     private List<Tile> m_currentTileList;
 
     private List<TileCollision> m_playerCollisionList;
@@ -14,6 +22,9 @@ public class LevelManager : MonoBehaviour
 
     [SerializeField]
     private GameObject m_subB;
+
+    [SerializeField]
+    private GameObject m_subStatic;
 
     [SerializeField]
     private Color m_colorA;
@@ -26,6 +37,9 @@ public class LevelManager : MonoBehaviour
 
     [SerializeField]
     private Color m_colorBDisabled;
+
+    [SerializeField]
+    private Color m_colorStatic;
 
     bool m_aSelected = true;
 
@@ -44,22 +58,30 @@ public class LevelManager : MonoBehaviour
     {
         m_tilesListA = new List<Tile>();
         m_tilesListB = new List<Tile>();
+        m_staticTilesList = new List<Tile>();
 
         m_playerCollisionList = new List<TileCollision>();
         
         m_subA.GetComponentsInChildren(m_tilesListA);
         m_subB.GetComponentsInChildren(m_tilesListB);
+        m_subStatic.GetComponentsInChildren(m_staticTilesList);
 
         foreach (Tile tile in m_tilesListA)
         {
-            tile.Subscribe(this, true);
+            tile.Subscribe(this, Set.A);
             tile.SetColor(m_colorA, m_colorADisabled);
         }
 
         foreach (Tile tile in m_tilesListB)
         {
-            tile.Subscribe(this, false);
+            tile.Subscribe(this, Set.B);
             tile.SetColor(m_colorB, m_colorBDisabled);
+        }
+
+        foreach (Tile tile in m_staticTilesList)
+        {
+            tile.Subscribe(this, Set.STATIC);
+            tile.SetColor(m_colorStatic, m_colorStatic);
         }
 
         m_currentTileList = m_tilesListA;
@@ -98,6 +120,12 @@ public class LevelManager : MonoBehaviour
                     results.Add(hit);
                     continue;
                 }
+
+                if (m_staticTilesList.Contains(tile))
+                {
+                    results.Add(hit);
+                    continue;
+                }
             }
         }
 
@@ -126,23 +154,12 @@ public class LevelManager : MonoBehaviour
 
         foreach (Tile tile in m_currentTileList)
         {
-            Vector2 hit = Vector2.zero;
+            CheckCollisionWithTile(tile, pc, velocity, currentPos);
+        }
 
-            if (pc.CastCheckVsOtherCollider(velocity, tile.Collider()))
-            {
-                Vector3 proj = FindNearestPointOnLine(currentPos, velocity.normalized, tile.transform.position);
-                float length = (tile.transform.position - proj).sqrMagnitude;
-
-                // Length to projection is less than 0, object is actually behind us
-                if (length < 0)
-                    continue;
-
-                TileCollision tileCollision = new TileCollision();
-                tileCollision.tile = tile;
-                tileCollision.length = length;
-
-                m_playerCollisionList.Add(tileCollision);
-            }
+        foreach (Tile tile in m_staticTilesList)
+        {
+            CheckCollisionWithTile(tile, pc, velocity, currentPos);
         }
 
         m_playerCollisionList.Sort(Comparer<TileCollision>.Create((a, b) => {
@@ -163,6 +180,27 @@ public class LevelManager : MonoBehaviour
         }
 
         return result;
+    }
+
+    private void CheckCollisionWithTile(Tile tile, PlayerController pc, Vector2 velocity, Vector2 currentPos)
+    {
+        Vector2 hit = Vector2.zero;
+
+        if (pc.CastCheckVsOtherCollider(velocity, tile.Collider()))
+        {
+            Vector3 proj = FindNearestPointOnLine(currentPos, velocity.normalized, tile.transform.position);
+            float length = (tile.transform.position - proj).sqrMagnitude;
+
+            // Length to projection is less than 0, object is actually behind us
+            if (length < 0)
+                return;
+
+            TileCollision tileCollision = new TileCollision();
+            tileCollision.tile = tile;
+            tileCollision.length = length;
+
+            m_playerCollisionList.Add(tileCollision);
+        }
     }
 
     public bool PlayerIsCollidingWithTile(Tile tile)

@@ -12,17 +12,16 @@ public class Tile : MonoBehaviour
     private Color m_color;
     private Color m_disabledColor;
 
-    private bool m_isSetA;
-
     private LevelManager m_levelManager;
+    private LevelManager.Set m_set;
 
     private void Update()
     {
-        if (m_isSetA && m_levelManager.IsSetA())
+        if (m_set == LevelManager.Set.A && m_levelManager.IsSetA())
         {
             m_renderer.color = m_color;
         }
-        else if (!m_isSetA && !m_levelManager.IsSetA())
+        else if (m_set == LevelManager.Set.B && !m_levelManager.IsSetA())
         {
             m_renderer.color = m_color;
         }
@@ -32,10 +31,10 @@ public class Tile : MonoBehaviour
         }
     }
 
-    public void Subscribe(LevelManager levelManager, bool setA)
+    public void Subscribe(LevelManager levelManager, LevelManager.Set set)
     {
         m_levelManager = levelManager;
-        m_isSetA = setA;
+        m_set = set;
     }
 
     public void SetColor(Color color, Color disabled)
