@@ -9,23 +9,39 @@ public class Tile : MonoBehaviour
     [SerializeField]
     private SpriteRenderer m_renderer;
 
+    private Color m_color;
+    private Color m_disabledColor;
+
+    private bool m_isSetA;
+
     private LevelManager m_levelManager;
 
-    public void Subscribe(LevelManager levelManager)
+    private void Update()
     {
-        m_levelManager = levelManager;
-    }
-
-    void Update()
-    {
-        if (m_levelManager.PlayerIsCollidingWithTile(this))
+        if (m_isSetA && m_levelManager.IsSetA())
         {
-            m_renderer.color = Color.green;
+            m_renderer.color = m_color;
+        }
+        else if (!m_isSetA && !m_levelManager.IsSetA())
+        {
+            m_renderer.color = m_color;
         }
         else
         {
-            m_renderer.color = Color.black;
+            m_renderer.color = m_disabledColor;
         }
+    }
+
+    public void Subscribe(LevelManager levelManager, bool setA)
+    {
+        m_levelManager = levelManager;
+        m_isSetA = setA;
+    }
+
+    public void SetColor(Color color, Color disabled)
+    {
+        m_color = color;
+        m_disabledColor = disabled;
     }
 
     public Collider2D Collider()

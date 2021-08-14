@@ -3,10 +3,36 @@ using UnityEngine;
 
 public class LevelManager : MonoBehaviour
 {
-    private List<Tile> m_tilesList;
+    private List<Tile> m_tilesListA;
+    private List<Tile> m_tilesListB;
+    private List<Tile> m_currentTileList;
+
     private List<TileCollision> m_playerCollisionList;
 
-    bool m_pause = false;
+    [SerializeField]
+    private GameObject m_subA;
+
+    [SerializeField]
+    private GameObject m_subB;
+
+    [SerializeField]
+    private Color m_colorA;
+
+    [SerializeField]
+    private Color m_colorADisabled;
+
+    [SerializeField]
+    private Color m_colorB;
+
+    [SerializeField]
+    private Color m_colorBDisabled;
+
+    bool m_aSelected = true;
+
+    public bool IsSetA()
+    {
+        return m_aSelected;
+    }
 
     public struct TileCollision
     {
@@ -16,24 +42,45 @@ public class LevelManager : MonoBehaviour
 
     private void Awake()
     {
-        m_tilesList = new List<Tile>();
+        m_tilesListA = new List<Tile>();
+        m_tilesListB = new List<Tile>();
+
         m_playerCollisionList = new List<TileCollision>();
-        GetComponentsInChildren(m_tilesList);
         
-        foreach (Tile tile in m_tilesList)
+        m_subA.GetComponentsInChildren(m_tilesListA);
+        m_subB.GetComponentsInChildren(m_tilesListB);
+
+        foreach (Tile tile in m_tilesListA)
         {
-            tile.Subscribe(this);
+            tile.Subscribe(this, true);
+            tile.SetColor(m_colorA, m_colorADisabled);
         }
 
-        Debug.Log($"Tile in level: {m_tilesList.Count}");
+        foreach (Tile tile in m_tilesListB)
+        {
+            tile.Subscribe(this, false);
+            tile.SetColor(m_colorB, m_colorBDisabled);
+        }
+
+        m_currentTileList = m_tilesListA;
+
+        Debug.Log($"Tile in level: {m_currentTileList.Count}");
     }
 
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.P))
         {
-            Debug.Log("Pause toggle");
-            m_pause = !m_pause;
+            if (m_aSelected)
+            {
+                m_currentTileList = m_tilesListB;
+            }
+            else
+            {
+                m_currentTileList = m_tilesListA;
+            }
+
+            m_aSelected = !m_aSelected;
         }
     }
 
@@ -43,7 +90,7 @@ public class LevelManager : MonoBehaviour
 
         Vector3 velocity = nextPos - currentPos;
 
-        foreach (Tile tile in m_tilesList)
+        foreach (Tile tile in m_currentTileList)
         {
             Vector2 hit = Vector2.zero;
 
