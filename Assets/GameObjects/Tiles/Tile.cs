@@ -1,6 +1,7 @@
 using UnityEngine;
 
 [SelectionBase]
+[ExecuteInEditMode]
 public class Tile : MonoBehaviour
 {
     [SerializeField]
@@ -17,6 +18,40 @@ public class Tile : MonoBehaviour
 
     private void Update()
     {
+        if (m_levelManager == null)
+        {
+            m_levelManager = GetComponentInParent<LevelManager>();
+
+            if (m_levelManager == null)
+            {
+                Debug.LogError($"Tile {name} needs to be a subchild of a LevelManager");
+                return;
+            }
+        }
+
+        if (GetComponentInParent<SetA>())
+        {
+            m_set = LevelManager.Set.A;
+            m_renderer.color = m_levelManager.AColor();
+        }
+
+        if (GetComponentInParent<SetB>())
+        {
+            m_set = LevelManager.Set.B;
+            m_renderer.color = m_levelManager.BColor();
+        }
+
+        if (GetComponentInParent<SetStatic>())
+        {
+            m_set = LevelManager.Set.STATIC;
+            m_renderer.color = m_levelManager.StaticColor();
+        }
+
+        if (!Application.isPlaying)
+        {
+            return;
+        }
+
         if (m_set == LevelManager.Set.A && m_levelManager.IsSetA())
         {
             m_renderer.color = m_color;

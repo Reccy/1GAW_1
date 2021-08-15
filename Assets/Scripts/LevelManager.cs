@@ -29,17 +29,23 @@ public class LevelManager : MonoBehaviour
     [SerializeField]
     private Color m_colorA;
 
+    public Color AColor() { return m_colorA; }
+
     [SerializeField]
     private Color m_colorADisabled;
 
     [SerializeField]
     private Color m_colorB;
 
+    public Color BColor() { return m_colorB; }
+
     [SerializeField]
     private Color m_colorBDisabled;
 
     [SerializeField]
     private Color m_colorStatic;
+
+    public Color StaticColor() { return m_colorStatic; }
 
     bool m_aSelected = true;
 
@@ -87,14 +93,6 @@ public class LevelManager : MonoBehaviour
         m_currentTileList = m_tilesListA;
 
         Debug.Log($"Tile in level: {m_currentTileList.Count}");
-    }
-
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.P))
-        {
-            Flip();
-        }
     }
 
     public RaycastHit2D[] FilterCollisions(RaycastHit2D[] hitsIn)
@@ -172,6 +170,13 @@ public class LevelManager : MonoBehaviour
             return 0;
         }));
 
+        for (int i = 0; i < m_playerCollisionList.Count; ++i)
+        {
+            TileCollision tc = m_playerCollisionList[i];
+
+            Debug.Log($"Tile {i}: {tc.tile.name}");
+        }
+
         List<Tile> result = new List<Tile>();
 
         foreach (TileCollision col in m_playerCollisionList)
@@ -184,8 +189,6 @@ public class LevelManager : MonoBehaviour
 
     private void CheckCollisionWithTile(Tile tile, PlayerController pc, Vector2 velocity, Vector2 currentPos)
     {
-        Vector2 hit = Vector2.zero;
-
         if (pc.CastCheckVsOtherCollider(velocity, tile.Collider()))
         {
             Vector3 proj = FindNearestPointOnLine(currentPos, velocity.normalized, tile.transform.position);

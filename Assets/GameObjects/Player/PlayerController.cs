@@ -132,28 +132,83 @@ public class PlayerController : MonoBehaviour
 
     void ResolveCollision(Tile tile)
     {
+        Vector2 nextPos = (Vector2)transform.position + m_velocity;
+
         RaycastHit2D[] hits = CastVsOtherCollider(m_velocity, tile.Collider());
 
         if (hits.Length == 0)
             return;
 
-        RaycastHit2D hit = FindClosestHit(hits, transform.position);
-
+        RaycastHit2D hit = FindClosestHit(hits, nextPos);
         Vector2 normal = CalculateNormal(tile, hit.point);
 
-        DebugDraw.DrawCross(hit.point, Color.black);
+        float lengthToTile = Vector2.Distance(hit.collider.transform.position, nextPos);
 
-        Bounds bounds = tile.OuterBounds(this);
-        float penetration = Mathf.Sqrt(bounds.SqrDistance(hit.point));
-        DebugDraw.DrawBounds(bounds);
-        DebugDraw.DrawCross(normal * penetration, Color.blue);
+        Debug.Log(lengthToTile);
 
-        Vector2 closestPoint = bounds.ClosestPoint(hit.point);
-        DebugDraw.DrawCross(closestPoint, Color.red);
+        if (lengthToTile > 1.3)
+            return;
 
-        Vector2 deltaV = normal * new Vector2(Mathf.Abs(m_velocity.x), Mathf.Abs(m_velocity.y)) * (1 - penetration);
+        if (normal == Vector2.right)
+        {
+            float tCenter = tile.transform.position.x;
+            float mCenter = transform.position.x + m_velocity.x;
 
-        m_velocity += deltaV;
+            float tOverlap = tCenter + (tile.Width() / 2);
+            float mOverlap = mCenter - (Width() / 2);
+
+            float overlap = tOverlap - mOverlap;
+
+            if (overlap <= 0)
+                return;
+
+            m_velocity.x += overlap;
+        }
+        else if (normal == Vector2.left)
+        {
+            float tCenter = tile.transform.position.x;
+            float mCenter = transform.position.x + m_velocity.x;
+
+            float tOverlap = tCenter - (tile.Width() / 2);
+            float mOverlap = mCenter + (Width() / 2);
+
+            float overlap = mOverlap - tOverlap;
+
+            if (overlap <= 0)
+                return;
+
+            m_velocity.x -= overlap;
+        }
+        else if (normal == Vector2.up)
+        {
+            float tCenter = tile.transform.position.y;
+            float mCenter = transform.position.y + m_velocity.y;
+
+            float tOverlap = tCenter + (tile.Height() / 2);
+            float mOverlap = mCenter - (Height() / 2);
+
+            float overlap = tOverlap - mOverlap;
+
+            if (overlap <= 0)
+                return;
+
+            m_velocity.y += overlap;
+        }
+        else if (normal == Vector2.down)
+        {
+            float tCenter = tile.transform.position.y;
+            float mCenter = transform.position.y + m_velocity.y;
+
+            float tOverlap = tCenter - (tile.Height() / 2);
+            float mOverlap = mCenter + (Height() / 2);
+
+            float overlap = mOverlap - tOverlap;
+
+            if (overlap <= 0)
+                return;
+
+            m_velocity.y -= overlap;
+        }
     }
 
     private Vector2 CalculateNormal(Tile tile, Vector2 pos)
@@ -165,11 +220,47 @@ public class PlayerController : MonoBehaviour
         RaycastHit2D hit = RaycastForTile(ray, tile);
 
         DebugDraw.DrawCross(hit.point, Color.yellow);
-        DebugDrawNormal(tile, hit.normal);
+        Vector2 normal = hit.normal;
 
-        return hit.normal;
+        if (normal != Vector2.up && normal != Vector2.down && normal != Vector2.left && normal != Vector2.right)
+        {
+            float upCloseness = Vector2.Dot(normal, Vector2.up);
+            float leftCloseness = Vector2.Dot(normal, Vector2.left);
+            float rightCloseness = Vector2.Dot(normal, Vector2.right);
+            float downCloseness = Vector2.Dot(normal, Vector2.down);
+
+            float upDiff = 1 - upCloseness;
+            float leftDiff = 1 - leftCloseness;
+            float rightDiff = 1 - rightCloseness;
+            float downDiff = 1 - downCloseness;
+
+            float select = Mathf.Min(upDiff, leftDiff, rightDiff, downDiff);
+
+            if (select == upDiff)
+            {
+                normal = Vector2.up;
+            }
+
+            if (select == leftDiff)
+            {
+                normal = Vector2.left;
+            }
+
+            if (select == rightDiff)
+            {
+                normal = Vector2.right;
+            }
+
+            if (select == downDiff)
+            {
+                normal = Vector2.down;
+            }
+        }
+
+        DebugDrawNormal(tile, normal);
+
+        return normal;
     }
-
 
     private void DebugDrawNormal(Tile tile, Vector2 normal)
     {
@@ -273,7 +364,7 @@ public class PlayerController : MonoBehaviour
 
         return hits[idx];
     }
-
+#if UNITY_EDITOR
     private void OnGUI()
     {
         GUI.Box(new Rect(10, 10, 150, 80), "Player");
@@ -281,4 +372,5 @@ public class PlayerController : MonoBehaviour
         GUI.Label(new Rect(20, 30, 140, 20), $"Vel: {m_velocity}");
         GUI.Label(new Rect(20, 60, 140, 20), $"Ground: {m_isGrounded}");
     }
+#endif
 }
