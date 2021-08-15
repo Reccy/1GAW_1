@@ -37,14 +37,27 @@ public class PlayerController : MonoBehaviour
     [SerializeField]
     private float m_horizontalDampening = 0.8f;
 
+    private Vector2 m_originalPos;
+
     private Vector2 m_velocity;
     private Vector2 m_inputMovement;
     private bool m_jumpInput;
     private bool m_isGrounded;
     private bool m_isGroundedInputCheck;
 
+    private void Awake()
+    {
+        m_originalPos = transform.position;
+    }
+
     void Update()
     {
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            Reset();
+            return;
+        }
+
         float mult = 1.0f;
 
         if (Input.GetKey(KeyCode.A))
@@ -66,6 +79,12 @@ public class PlayerController : MonoBehaviour
         {
             m_jumpInput = true;
         }
+    }
+
+    void Reset()
+    {
+        transform.position = m_originalPos;
+        m_velocity = Vector2.zero;
     }
 
     void FixedUpdate()
