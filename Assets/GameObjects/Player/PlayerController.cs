@@ -132,7 +132,20 @@ public class PlayerController : MonoBehaviour
 
     void ResolveCollision(Tile tile)
     {
+        if (Mathf.Abs(m_velocity.x - 0) < 0.0001f)
+        {
+            m_velocity.x = 0;
+        }
+
+        if (Mathf.Abs(m_velocity.y - 0) < 0.0001f)
+        {
+            m_velocity.y = 0;
+        }
+
         Vector2 nextPos = (Vector2)transform.position + m_velocity;
+
+        DebugDraw.DrawCross(nextPos, Color.black);
+        DebugDraw.DrawArrow(nextPos, tile.transform.position, Color.black);
 
         RaycastHit2D[] hits = CastVsOtherCollider(m_velocity, tile.Collider());
 
@@ -140,14 +153,13 @@ public class PlayerController : MonoBehaviour
             return;
 
         RaycastHit2D hit = FindClosestHit(hits, nextPos);
-        Vector2 normal = CalculateNormal(tile, hit.point);
 
-        float lengthToTile = Vector2.Distance(hit.collider.transform.position, nextPos);
-
-        Debug.Log(lengthToTile);
-
-        if (lengthToTile > 1.3)
+        float loc = Vector2.Distance(hit.point, tile.transform.position);
+        
+        if (loc > 0.7f)
             return;
+
+        Vector2 normal = CalculateNormal(tile, hit.point);
 
         if (normal == Vector2.right)
         {

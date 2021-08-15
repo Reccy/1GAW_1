@@ -173,8 +173,6 @@ public class LevelManager : MonoBehaviour
         for (int i = 0; i < m_playerCollisionList.Count; ++i)
         {
             TileCollision tc = m_playerCollisionList[i];
-
-            Debug.Log($"Tile {i}: {tc.tile.name}");
         }
 
         List<Tile> result = new List<Tile>();
